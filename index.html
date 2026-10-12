@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>나만의 독서 기록장</title>
+    <!-- 구글 폰트 및 Chart.js -->
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #8395a7;
+            --bg-color: #f7f9fa;
+            --shelf-color: #c8b6a6;
+            --text-color: #2f3640;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Pretendard', sans-serif;
+            word-break: keep-all;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding-bottom: 60px;
+        }
+
+        header {
+            background: #ffffff;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            padding: 16px 20px 12px 20px;
+            text-align: center;
+        }
+
+        .header-title {
+            font-weight: 700;
+            font-size: 1.25rem;
+            color: #576574;
+            margin-bottom: 12px;
+        }
+
+        .nav-menu {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            white-space: nowrap;
+        }
+
+        .nav-btn {
+            background: #f1f2f6;
+            border: none;
+            padding: 8px 18px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            color: #8395a7;
+            transition: all 0.2s;
+        }
+
+        .nav-btn.active {
+            background: #8395a7;
+            color: #ffffff;
+        }
+
+        .main-container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 0 15px;
+        }
+
+        .filter-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 20px;
+            background: #ffffff;
+            padding: 15px;
+            border-radius: 14px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+        }
+
+        .filter-chip {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            padding: 6px 14px;
+            border-radius: 16px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            user-select: none;
+            color: #576574;
+        }
+
+        .filter-chip.selected {
+            background: #576574;
+            color: #fff;
+            border-color: #576574;
+        }
+
+        .action-bar {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 20px;
+        }
+
+        .primary-btn {
+            background: #8395a7;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 3px 8px rgba(131, 149, 167, 0.25);
+            transition: opacity 0.2s;
+        }
+
+        .primary-btn:hover {
+            opacity: 0.9;
+        }
+
+        .bookshelf-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        @media (max-width: 900px) {
+            .bookshelf-grid {
+                grid-template-columns: repeat(1, 1fr);
+            }
+        }
+
+        .shelf-unit {
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+            overflow: hidden;
+            border: 1px solid #f1f2f6;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .shelf-header {
+            background: #fafafa;
+            padding: 12px 16px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            border-bottom: 1px solid #f1f2f6;
+            color: #576574;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .shelf-header span {
+            font-size: 0.75rem;
+            color: #a4b0be;
+            font-weight: normal;
+        }
+
+        .shelf-board {
+            background-color: #fbf9f5;
+            background-image: linear-gradient(to bottom, #fcfbfa 0%, #f3eee7 100%);
+            min-height: 180px;
+            padding: 15px 12px;
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+            overflow-x: auto;
+            border-bottom: 12px solid var(--shelf-color);
+            box-shadow: inset 0 -4px 6px rgba(0,0,0,0.05);
+            position: relative;
+        }
+
+        .book-spine {
+            width: 32px;
+            height: 140px;
+            border-radius: 4px 4px 1px 1px;
+            cursor: grab;
+            position: relative;
+            writing-mode: vertical-rl;
+            text-orientation: upright;
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            font-size: 0.78rem;
+            color: #333333;
+            font-weight: 600;
+            box-shadow: -2px 3px 6px rgba(0,0,0,0.08);
+            transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.2s, opacity 0.2s;
+            flex-shrink: 0;
+            letter-spacing: 0.5px;
+            padding: 12px 0 8px 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-height: 135px;
+            user-select: none;
+        }
+
+        .book-spine:active {
+            cursor: grabbing;
+        }
+
+        .book-spine.dragging {
+            opacity: 0.4;
+        }
+
+        .book-spine.drag-over {
+            border: 2px dashed #576574;
+            transform: scale(1.05);
+        }
+
+        .book-spine:hover {
+            transform: translateY(-22px) scale(1.04);
+            box-shadow: -4px 12px 20px rgba(0,0,0,0.15);
+            z-index: 10;
+        }
+
+        .tab-section {
+            display: none;
+        }
+        .tab-section.active {
+            display: block;
+        }
+
+        .status-btn-group {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+
+        .status-sub-btn {
+            background: #ffffff;
+            border: 1px solid #e9ecef;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            color: #8395a7;
+            transition: all 0.2s;
+        }
+
+        .status-sub-btn.active {
+            background: #576574;
+            color: #ffffff;
+            border-color: #576574;
+        }
+
+        .book-list-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .book-card-item {
+            background: #ffffff;
+            padding: 16px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+            cursor: pointer;
+            transition: transform 0.2s;
+            border: 1px solid #f1f2f6;
+        }
+
+        .book-card-item:hover {
+            transform: translateY(-3px);
+        }
+
+        .stats-container {
+            background: #ffffff;
+            padding: 25px;
+            border-radius: 14px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+            max-width: 650px;
+            margin: 0 auto;
+        }
+
+        .stats-selected-title {
+            margin-top: 25px;
+            padding-top: 15px;
+            border-top: 1px dashed #dee2e6;
+            font-size: 1rem;
+            font-weight: 700;
+            color: #576574;
+        }
+
+        #loadingOverlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.9); display: flex;
+            flex-direction: column; justify-content: center; align-items: center;
+            z-index: 9999; font-weight: 600; color: #576574; font-size: 1.1rem;
+            transition: opacity 0.3s;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.4);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 15px;
+        }
+
+        .modal.open {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #ffffff;
+            width: 100%;
+            max-width: 500px;
+            border-radius: 14px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            touch-action: pan-y;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 15px; right: 20px;
+            background: none; border: none;
+            font-size: 1.5rem; cursor: pointer;
+            color: #aaa;
+        }
+
+        .swipe-hint {
+            display: none;
+            text-align: center;
+            font-size: 0.75rem;
+            color: #888;
+            margin-top: 12px;
+        }
+
+        @media (max-width: 600px) {
+            .swipe-hint {
+                display: block;
+            }
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #555;
+        }
+
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 0.95rem;
+        }
+
+        .book-detail-view img {
+            width: 120px;
+            height: 170px;
+            object-fit: cover;
+            border-radius: 6px;
+            float: left;
+            margin-right: 15px;
+            margin-bottom: 10px;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+        }
+
+        .img-preview {
+            width: 80px;
+            height: 110px;
+            object-fit: cover;
+            border-radius: 4px;
+            margin-top: 8px;
+            display: none;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loadingOverlay">구글 시트에서 도서 데이터를 불러오는 중입니다... 📚</div>
+
+    <header>
+        <div class="header-title">📚 나의 독서 기록장</div>
+        <nav class="nav-menu">
+            <button class="nav-btn active" onclick="switchTab('shelf', this)">내 책꽂이</button>
+            <button class="nav-btn" onclick="switchTab('status', this)">독서 상태</button>
+            <button class="nav-btn" onclick="switchTab('stats', this)">독서 통계</button>
+        </nav>
+    </header>
+
+    <main class="main-container">
+        
+        <div id="tab-shelf" class="tab-section active">
+            <div class="filter-bar" id="filterBar">
+                <div class="filter-chip selected" onclick="toggleFilter('all')">전체보기</div>
+            </div>
+
+            <div class="action-bar">
+                <button class="primary-btn" onclick="openAddModal()">+ 새 책 추가하기</button>
+            </div>
+
+            <div class="bookshelf-grid" id="bookshelfGrid"></div>
+        </div>
+
+        <div id="tab-status" class="tab-section">
+            <div class="status-btn-group">
+                <button class="status-sub-btn active" onclick="switchStatusFilter('completed', this)">읽은 책</button>
+                <button class="status-sub-btn" onclick="switchStatusFilter('reading', this)">읽고 있는 책</button>
+                <button class="status-sub-btn" onclick="switchStatusFilter('stopped', this)">중단한 책</button>
+            </div>
+            <div class="book-list-cards" id="statusBookContainer"></div>
+        </div>
+
+        <div id="tab-stats" class="tab-section">
+            <div class="stats-container">
+                <div style="position: relative; height:320px; width:100%">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+                <div id="statsBookListArea" style="display:none;">
+                    <div class="stats-selected-title" id="statsSelectedCategoryTitle">선택 분야 책 목록</div>
+                    <div class="book-list-cards" id="statsBookContainer" style="margin-top:15px;"></div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <div class="modal" id="bookModal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeModal()">&times;</button>
+            <h2 id="modalTitle" style="margin-bottom: 20px; font-size: 1.2rem;">새 도서 등록</h2>
+            <form id="bookForm" onsubmit="saveBook(event)">
+                <input type="hidden" id="bookId">
+                <div class="form-group">
+                    <label>책 제목</label>
+                    <input type="text" id="title" required placeholder="책 제목을 입력하세요">
+                </div>
+                <div class="form-group">
+                    <label>지은이</label>
+                    <input type="text" id="author" required placeholder="저자명">
+                </div>
+                <div class="form-group">
+                    <label>출판사</label>
+                    <input type="text" id="publisher" placeholder="출판사명">
+                </div>
+                <div class="form-group">
+                    <label>세부 분류 (책장)</label>
+                    <select id="category" required>
+                        <option value="소설">소설 (문학)</option>
+                        <option value="시">시 (문학)</option>
+                        <option value="에세이">에세이 (문학)</option>
+                        <option value="역사">역사 (역사/지리)</option>
+                        <option value="지리">지리 (역사/지리)</option>
+                        <option value="사회과학">사회과학 (사회/경제/정치)</option>
+                        <option value="경제">경제 (사회/경제/정치)</option>
+                        <option value="정치">정치 (사회/경제/정치)</option>
+                        <option value="철학">철학 (철학/심리학)</option>
+                        <option value="심리학">심리학 (철학/심리학)</option>
+                        <option value="과학">과학 (자연과학)</option>
+                        <option value="수학">수학 (자연과학)</option>
+                        <option value="예술">예술 (예술/체육/취미)</option>
+                        <option value="언어">언어 (언어/국어/외국어)</option>
+                        <option value="기술과학">기술과학/의학/공학</option>
+                        <option value="종교">종교</option>
+                        <option value="총류">총류</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>독서 상태</label>
+                    <select id="status">
+                        <option value="completed">읽은 책</option>
+                        <option value="reading">읽고 있는 책</option>
+                        <option value="stopped">중단한 책</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>총 페이지 수 (책 두께 자동 조절용)</label>
+                    <input type="number" id="pages" value="300" min="20" max="2000">
+                </div>
+                <div class="form-group">
+                    <label>표지 이미지 파일 첨부</label>
+                    <input type="file" id="imageFile" accept="image/*" onchange="previewImage(event)">
+                    <img id="imagePreview" class="img-preview" alt="미리보기">
+                </div>
+                <div class="form-group">
+                    <label>나의 별점 (1~5)</label>
+                    <select id="rating">
+                        <option value="5">⭐⭐⭐⭐⭐ (5점)</option>
+                        <option value="4">⭐⭐⭐⭐ (4점)</option>
+                        <option value="3">⭐⭐⭐ (3점)</option>
+                        <option value="2">⭐⭐ (2점)</option>
+                        <option value="1">⭐ (1점)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>줄거리</label>
+                    <textarea id="summary" rows="3" placeholder="간단한 줄거리"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>인상 깊은 구절</label>
+                    <textarea id="quote" rows="3" placeholder="기억하고 싶은 문장"></textarea>
+                </div>
+                <button type="submit" class="primary-btn" style="width: 100%; margin-top: 10px;">저장하기</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal" id="detailModal">
+        <div class="modal-content" id="modalDetailContent">
+            <button class="close-btn" onclick="closeDetailModal()">&times;</button>
+            <div id="detailContent" class="book-detail-view" style="overflow:hidden;"></div>
+            <div class="swipe-hint">👈 좌우로 쓸어넘겨 같은 책꽂이 내 다른 책을 확인해보세요 👉</div>
+            <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end;">
+                <button class="primary-btn" id="editBookBtn" style="background: #8395a7;">수정</button>
+                <button class="primary-btn" id="deleteBookBtn" style="background: #ff7675;">삭제</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxkrh9vawRnDRpONaX_W3o8BeCIEqswdK8QeEzKepNQwgSEzoC_lA7GO14zUeeHWY4j6A/exec";
+
+        const shelfOrder = [
+            '소설', '시', '에세이', '역사', '지리',
+            '사회과학', '경제', '정치', '철학', '심리학',
+            '과학', '수학', '예술', '언어', '기술과학', '종교', '총류'
+        ];
+
+        const categoryColors = {
+            '소설': '#ffb8b8', '시': '#e8dff5', '에세이': '#fce1e4', '역사': '#fcf4dd',
+            '지리': '#ddedf4', '사회과학': '#cddafd', '경제': '#a3c4f3', '정치': '#d2d2d2',
+            '철학': '#e2ece9', '심리학': '#dfe7fd', '과학': '#b9fbc0', '수학': '#98f5e1',
+            '예술': '#fbf8cc', '언어': '#fde2e4', '기술과학': '#c7f9cc', '종교': '#f1c0e8', '총류': '#cfbaf0'
+        };
+
+        let books = [];
+        let activeFilters = [];
+        let currentStatusFilter = 'completed';
+        let currentDetailBookId = null;
+        let chartInstance = null;
+        let currentUploadedImageData = '';
+
+        async function fetchBooksFromSheet() {
+            try {
+                const response = await fetch(WEB_APP_URL);
+                const data = await response.json();
+                return data || [];
+            } catch (error) {
+                console.error("구글 시트 연동 실패:", error);
+                return [];
+            }
+        }
+
+        async function saveBookToSheet(book) {
+            try {
+                await fetch(WEB_APP_URL, {
+                    method: "POST",
+                    body: JSON.stringify({ action: "save", book: book })
+                });
+            } catch (error) {
+                console.error("구글 시트 저장 실패:", error);
+            }
+        }
+
+        async function saveAllBooksOrder() {
+            try {
+                await fetch(WEB_APP_URL, {
+                    method: "POST",
+                    body: JSON.stringify({ action: "saveAll", books: books })
+                });
+            } catch (error) {
+                console.error("전체 순서 시트 동기화 실패:", error);
+            }
+        }
+
+        async function deleteBookFromSheet(id) {
+            try {
+                await fetch(WEB_APP_URL, {
+                    method: "POST",
+                    body: JSON.stringify({ action: "delete", id: id })
+                });
+            } catch (error) {
+                console.error("구글 시트 삭제 실패:", error);
+            }
+        }
+
+        async function initApp() {
+            books = await fetchBooksFromSheet();
+            document.getElementById('loadingOverlay').style.opacity = '0';
+            setTimeout(() => {
+                document.getElementById('loadingOverlay').style.display = 'none';
+            }, 300);
+
+            initFilters();
+            renderBookshelf();
+        }
+
+        function switchTab(tabName, btnEl) {
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            btnEl.classList.add('active');
+
+            document.querySelectorAll('.tab-section').forEach(sec => sec.classList.remove('active'));
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+
+            if (tabName === 'status') renderStatusPages();
+            if (tabName === 'stats') renderStats();
+        }
+
+        function initFilters() {
+            const filterBar = document.getElementById('filterBar');
+            let html = `<div class="filter-chip ${activeFilters.length === 0 ? 'selected' : ''}" onclick="toggleFilter('all')">전체보기</div>`;
+            shelfOrder.forEach(cat => {
+                const isSelected = activeFilters.includes(cat) ? 'selected' : '';
+                html += `<div class="filter-chip ${isSelected}" onclick="toggleFilter('${cat}')">${cat}</div>`;
+            });
+            filterBar.innerHTML = html;
+        }
+
+        function toggleFilter(cat) {
+            if (cat === 'all') {
+                activeFilters = [];
+            } else {
+                const idx = activeFilters.indexOf(cat);
+                if (idx > -1) activeFilters.splice(idx, 1);
+                else activeFilters.push(cat);
+            }
+            initFilters();
+            renderBookshelf();
+        }
+
+        function renderBookshelf() {
+            const grid = document.getElementById('bookshelfGrid');
+            grid.innerHTML = '';
+
+            shelfOrder.forEach(cat => {
+                if (activeFilters.length > 0 && !activeFilters.includes(cat)) return;
+
+                const unit = document.createElement('div');
+                unit.className = 'shelf-unit';
+                
+                const header = document.createElement('div');
+                header.className = 'shelf-header';
+                const catBooks = books.filter(b => b.category === cat);
+                header.innerHTML = `${cat} <span>(드래그하여 순서 변경 가능)</span>`;
+                unit.appendChild(header);
+
+                const board = document.createElement('div');
+                board.className = 'shelf-board';
+
+                catBooks.forEach(book => {
+                    const spine = document.createElement('div');
+                    spine.className = 'book-spine';
+                    spine.draggable = true;
+                    spine.dataset.id = book.id;
+
+                    let thickness = Math.min(Math.max(Number(book.pages || 300) / 12, 26), 60);
+                    spine.style.width = `${thickness}px`;
+                    spine.style.backgroundColor = categoryColors[book.category] || '#e8dff5';
+                    spine.textContent = book.title;
+                    
+                    spine.onclick = () => {
+                        if (!spine.dataset.moved) openDetailModal(book.id);
+                    };
+
+                    spine.addEventListener('dragstart', (e) => {
+                        e.dataTransfer.setData('text/plain', book.id);
+                        spine.classList.add('dragging');
+                        spine.dataset.moved = "true";
+                    });
+
+                    spine.addEventListener('dragend', () => {
+                        spine.classList.remove('dragging');
+                        setTimeout(() => delete spine.dataset.moved, 100);
+                    });
+
+                    spine.addEventListener('dragover', (e) => {
+                        e.preventDefault();
+                        spine.classList.add('drag-over');
+                    });
+
+                    spine.addEventListener('dragleave', () => {
+                        spine.classList.remove('drag-over');
+                    });
+
+                    spine.addEventListener('drop', async (e) => {
+                        e.preventDefault();
+                        spine.classList.remove('drag-over');
+                        const draggedId = e.dataTransfer.getData('text/plain');
+                        const targetId = book.id;
+
+                        if (draggedId == targetId) return;
+
+                        reorderBooksInArray(Number(draggedId), Number(targetId), cat);
+                    });
+
+                    board.appendChild(spine);
+                });
+
+                unit.appendChild(board);
+                grid.appendChild(unit);
+            });
+        }
+
+        async function reorderBooksInArray(draggedId, targetId, category) {
+            const catBooks = books.filter(b => b.category === category);
+            const draggedIdx = catBooks.findIndex(b => b.id == draggedId);
+            const targetIdx = catBooks.findIndex(b => b.id == targetId);
+
+            if (draggedIdx === -1 || targetIdx === -1) return;
+
+            const [movedBook] = catBooks.splice(draggedIdx, 1);
+            catBooks.splice(targetIdx, 0, movedBook);
+
+            let newBooks = [];
+            shelfOrder.forEach(c => {
+                if (c === category) {
+                    newBooks.push(...catBooks);
+                } else {
+                    newBooks.push(...books.filter(b => b.category === c));
+                }
+            });
+            const handledIds = newBooks.map(b => b.id);
+            books.forEach(b => {
+                if (!handledIds.includes(b.id)) newBooks.push(b);
+            });
+
+            books = newBooks;
+            renderBookshelf();
+
+            await saveAllBooksOrder();
+        }
+
+        function switchStatusFilter(status, btnEl) {
+            currentStatusFilter = status;
+            document.querySelectorAll('.status-sub-btn').forEach(b => b.classList.remove('active'));
+            btnEl.classList.add('active');
+            renderStatusPages();
+        }
+
+        function renderStatusPages() {
+            const container = document.getElementById('statusBookContainer');
+            container.innerHTML = '';
+
+            const filteredBooks = books.filter(b => b.status === currentStatusFilter);
+
+            if (filteredBooks.length === 0) {
+                container.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:#888; padding:30px;">등록된 도서가 없습니다.</div>`;
+                return;
+            }
+
+            filteredBooks.forEach(book => {
+                const card = document.createElement('div');
+                card.className = 'book-card-item';
+                card.onclick = () => openDetailModal(book.id);
+                card.innerHTML = `
+                    <div style="font-weight:600; margin-bottom:4px; font-size:1.05rem; color:#2f3640;">${book.title}</div>
+                    <div style="font-size:0.85rem; color:#8395a7;">${book.author} | ${book.category}</div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function renderStats() {
+            const ctx = document.getElementById('categoryChart').getContext('2d');
+            
+            const counts = {};
+            shelfOrder.forEach(cat => counts[cat] = 0);
+            books.forEach(b => {
+                if (counts[b.category] !== undefined) counts[b.category]++;
+            });
+
+            const labels = shelfOrder.filter(cat => counts[cat] > 0);
+            const data = labels.map(cat => counts[cat]);
+            const bgColors = labels.map(cat => categoryColors[cat] || '#e8dff5');
+
+            if (chartInstance) chartInstance.destroy();
+
+            chartInstance = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: bgColors,
+                        borderWidth: 1.5,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    onClick: (evt, activeElements) => {
+                        if (activeElements.length > 0) {
+                            const index = activeElements[0].index;
+                            const selectedCat = labels[index];
+                            showBooksForCategory(selectedCat);
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                boxWidth: 12,
+                                padding: 12,
+                                font: { size: 12, family: 'Pretendard' }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function showBooksForCategory(category) {
+            const listArea = document.getElementById('statsBookListArea');
+            const titleEl = document.getElementById('statsSelectedCategoryTitle');
+            const container = document.getElementById('statsBookContainer');
+
+            const catBooks = books.filter(b => b.category === category);
+
+            titleEl.textContent = `📖 '${category}' 분야 등록된 책 (${catBooks.length}권)`;
+            container.innerHTML = '';
+
+            catBooks.forEach(book => {
+                const card = document.createElement('div');
+                card.className = 'book-card-item';
+                card.onclick = () => openDetailModal(book.id);
+                card.innerHTML = `
+                    <div style="font-weight:600; margin-bottom:4px; color:#2f3640;">${book.title}</div>
+                    <div style="font-size:0.85rem; color:#8395a7;">${book.author} | ⭐${book.rating || 5}점</div>
+                `;
+                container.appendChild(card);
+            });
+
+            listArea.style.display = 'block';
+        }
+
+        function previewImage(event) {
+            const file = event.target.files[0];
+            const preview = document.getElementById('imagePreview');
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    currentUploadedImageData = e.target.result;
+                    preview.src = currentUploadedImageData;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function openAddModal() {
+            document.getElementById('bookForm').reset();
+            document.getElementById('bookId').value = '';
+            document.getElementById('imagePreview').style.display = 'none';
+            currentUploadedImageData = '';
+            document.getElementById('modalTitle').textContent = '새 도서 등록';
+            document.getElementById('bookModal').classList.add('open');
+        }
+
+        function closeModal() {
+            document.getElementById('bookModal').classList.remove('open');
+        }
+
+        async function saveBook(e) {
+            e.preventDefault();
+            const id = document.getElementById('bookId').value;
+            const bookId = id ? Number(id) : Date.now();
+            const existingBook = books.find(b => b.id == bookId);
+
+            const bookData = {
+                id: bookId,
+                title: document.getElementById('title').value,
+                author: document.getElementById('author').value,
+                publisher: document.getElementById('publisher').value,
+                category: document.getElementById('category').value,
+                status: document.getElementById('status').value,
+                pages: Number(document.getElementById('pages').value),
+                imageData: currentUploadedImageData || (existingBook ? existingBook.imageData : ''),
+                rating: Number(document.getElementById('rating').value),
+                summary: document.getElementById('summary').value,
+                quote: document.getElementById('quote').value
+            };
+
+            const idx = books.findIndex(b => b.id == bookId);
+            if (idx > -1) {
+                books[idx] = bookData;
+            } else {
+                books.push(bookData);
+            }
+
+            closeModal();
+            renderBookshelf();
+            await saveBookToSheet(bookData);
+        }
+
+        function openDetailModal(id) {
+            currentDetailBookId = id;
+            const book = books.find(b => b.id == id);
+            if (!book) return;
+
+            const detailEl = document.getElementById('detailContent');
+            detailEl.innerHTML = `
+                <img src="${book.imageData || 'https://via.placeholder.com/120x170?text=No+Cover'}" alt="표지">
+                <h3 style="margin-bottom:5px; color:#2f3640;">${book.title}</h3>
+                <p style="font-size:0.9rem; color:#8395a7; margin-bottom:10px;">${book.author} | ${book.publisher || '출판사 미상'}</p>
+                <p style="font-size:0.85rem; margin-bottom:5px;"><b>분류:</b> ${book.category} (${book.pages || 300}쪽)</p>
+                <p style="font-size:0.85rem; margin-bottom:10px;"><b>별점:</b> ${'⭐'.repeat(book.rating || 5)}</p>
+                <div style="clear:both;"></div>
+                <hr style="margin:10px 0; border:0; border-top:1px solid #f1f2f6;">
+                <p style="font-size:0.9rem; margin-bottom:8px;"><b>줄거리:</b><br>${book.summary || '등록된 줄거리가 없습니다.'}</p>
+                <p style="font-size:0.9rem;"><b>인상 깊은 구절:</b><br>"${book.quote || '등록된 구절이 없습니다.'}"</p>
+            `;
+
+            document.getElementById('editBookBtn').onclick = () => {
+                closeDetailModal();
+                editBook(book.id);
+            };
+            document.getElementById('deleteBookBtn').onclick = async () => {
+                if (confirm('정말 이 책을 삭제하시겠습니까?')) {
+                    books = books.filter(b => b.id != id);
+                    closeDetailModal();
+                    renderBookshelf();
+                    await deleteBookFromSheet(id);
+                }
+            };
+
+            document.getElementById('detailModal').classList.add('open');
+        }
+
+        function closeDetailModal() {
+            document.getElementById('detailModal').classList.remove('open');
+        }
+
+        function editBook(id) {
+            const book = books.find(b => b.id == id);
+            if (!book) return;
+
+            document.getElementById('bookId').value = book.id;
+            document.getElementById('title').value = book.title;
+            document.getElementById('author').value = book.author;
+            document.getElementById('publisher').value = book.publisher;
+            document.getElementById('category').value = book.category;
+            document.getElementById('status').value = book.status;
+            document.getElementById('pages').value = book.pages || 300;
+            document.getElementById('rating').value = book.rating || 5;
+            document.getElementById('summary').value = book.summary || '';
+            document.getElementById('quote').value = book.quote || '';
+
+            currentUploadedImageData = book.imageData || '';
+            const preview = document.getElementById('imagePreview');
+            if (currentUploadedImageData) {
+                preview.src = currentUploadedImageData;
+                preview.style.display = 'block';
+            } else {
+                preview.style.display = 'none';
+            }
+
+            document.getElementById('modalTitle').textContent = '도서 정보 수정';
+            document.getElementById('bookModal').classList.add('open');
+        }
+
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        const modalContent = document.getElementById('modalDetailContent');
+        modalContent.addEventListener('touchstart', e => {
+            touchStartX = e.changedTouches[0].screenX;
+        }, { passive: true });
+
+        modalContent.addEventListener('touchend', e => {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        }, { passive: true });
+
+        function handleSwipe() {
+            const diff = touchEndX - touchStartX;
+            if (Math.abs(diff) > 50 && currentDetailBookId) {
+                const currentBook = books.find(b => b.id == currentDetailBookId);
+                if (!currentBook) return;
+
+                const sameCategoryBooks = books.filter(b => b.category === currentBook.category);
+                const currentIndex = sameCategoryBooks.findIndex(b => b.id == currentDetailBookId);
+                if (currentIndex === -1) return;
+
+                if (diff < 0) {
+                    const nextIndex = (currentIndex + 1) % sameCategoryBooks.length;
+                    openDetailModal(sameCategoryBooks[nextIndex].id);
+                } else {
+                    const prevIndex = (currentIndex - 1 + sameCategoryBooks.length) % sameCategoryBooks.length;
+                    openDetailModal(sameCategoryBooks[prevIndex].id);
+                }
+            }
+        }
+
+        window.onload = initApp;
+    </script>
+</body>
+</html>
