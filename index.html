@@ -500,8 +500,8 @@
                     <input type="number" id="pages" value="300" min="20" max="2000">
                 </div>
                 <div class="form-group">
-                    <label>표지 이미지 파일 첨부</label>
-                    <input type="file" id="imageFile" accept="image/*" onchange="previewImage(event)">
+                    <label>표지 이미지 링크 (URL)</label>
+                    <input type="url" id="imageUrlInput" placeholder="이미지 주소(https://...)를 입력하세요" oninput="previewImageByUrl(this.value)">
                     <img id="imagePreview" class="img-preview" alt="미리보기">
                 </div>
                 <div class="form-group">
@@ -560,7 +560,7 @@
         let currentStatusFilter = 'completed';
         let currentDetailBookId = null;
         let chartInstance = null;
-        let currentUploadedImageData = '';
+        let currentImageUrl = '';
 
         async function fetchBooksFromSheet() {
             try {
@@ -856,25 +856,26 @@
             listArea.style.display = 'block';
         }
 
-        function previewImage(event) {
-            const file = event.target.files[0];
+        function previewImageByUrl(url) {
             const preview = document.getElementById('imagePreview');
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    currentUploadedImageData = e.target.result;
-                    preview.src = currentUploadedImageData;
-                    preview.style.display = 'block';
+            currentImageUrl = url.trim();
+            if (currentImageUrl) {
+                preview.src = currentImageUrl;
+                preview.style.display = 'block';
+                preview.onerror = function() {
+                    preview.style.display = 'none';
                 };
-                reader.readAsDataURL(file);
+            } else {
+                preview.style.display = 'none';
             }
         }
 
         function openAddModal() {
             document.getElementById('bookForm').reset();
             document.getElementById('bookId').value = '';
+            document.getElementById('imageUrlInput').value = '';
             document.getElementById('imagePreview').style.display = 'none';
-            currentUploadedImageData = '';
+            currentImageUrl = '';
             document.getElementById('modalTitle').textContent = '새 도서 등록';
             document.getElementById('bookModal').classList.add('open');
         }
@@ -897,7 +898,7 @@
                 category: document.getElementById('category').value,
                 status: document.getElementById('status').value,
                 pages: Number(document.getElementById('pages').value),
-                imageData: currentUploadedImageData || (existingBook ? existingBook.imageData : ''),
+                imageData: currentImageUrl || (existingBook ? existingBook.imageData : ''),
                 rating: Number(document.getElementById('rating').value),
                 summary: document.getElementById('summary').value,
                 quote: document.getElementById('quote').value
@@ -968,10 +969,12 @@
             document.getElementById('summary').value = book.summary || '';
             document.getElementById('quote').value = book.quote || '';
 
-            currentUploadedImageData = book.imageData || '';
+            currentImageUrl = book.imageData || '';
+            document.getElementById('imageUrlInput').value = currentImageUrl;
+            
             const preview = document.getElementById('imagePreview');
-            if (currentUploadedImageData) {
-                preview.src = currentUploadedImageData;
+            if (currentImageUrl) {
+                preview.src = currentImageUrl;
                 preview.style.display = 'block';
             } else {
                 preview.style.display = 'none';
